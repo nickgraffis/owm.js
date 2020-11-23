@@ -1,4 +1,4 @@
-# 🌤️ A dead simple Open Weather Map wrapper for javascript.
+# 🌤️ Open Weather Map wrapper for javascript.
 
 ```javascript
 const OpenWeather = require('owm.js');
