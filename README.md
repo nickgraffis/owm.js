@@ -1,5 +1,5 @@
 # 🌤️ Open Weather Map wrapper for javascript.
-## The goal was to create a tool that was dead simple to use. And didn't do too much.
+## The goal was to create a tool that was dead simple to use and didn't do too much.
 
 ## Quick Demo:
 ```javascript
