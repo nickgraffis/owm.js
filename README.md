@@ -4,7 +4,7 @@
 ## Quick Demo:
 ```javascript
 const OpenWeather = require('owm.js');
-let MyWeather = OpenWeather(MY_OPENWEATHER_APP_ID);
+let MyWeather = new OpenWeather(MY_OPENWEATHER_APP_ID);
 
 let losAngeles = MyWeather.location('Los Angeles');
 
