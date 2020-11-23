@@ -269,7 +269,7 @@ class OpenWeather {
       this.call += '/timemachine';
       this.options.push({dt});
     } else {
-      return 'Error';
+      this.error = 'You can only go back a max of 5 days with the One Call Timemachine.';
     }
 
     return this;
