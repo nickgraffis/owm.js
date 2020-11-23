@@ -66,7 +66,7 @@ MyWeather.location('Los Angeles').units('imperial').current()
 This can be useful in an event where you want to use the response of a call and change your object, and then make a different call.
 Here is an example of looking up the Current weather for a city with the query, and then using that response to look up the One Call of that city using the coordinates returned to you by the Current response.
 ```javascript
-MyOpenWeather.location('Seattle').current()
+MyWeather.location('Seattle').current()
 .then(function (obj) {
   console.log(obj.call);
   obj.location({lon: obj.response.coord.lon, lat: obj.response.coord.lat})
@@ -74,6 +74,7 @@ MyOpenWeather.location('Seattle').current()
   .then(obj => console.log(obj.response.daily))
 });
 ```
+You now have access to the daily array, only available through the One Call.
 ## API Calls
 Check out the documentation for [Open Weather Map](https://openweathermap.org/api).
 
