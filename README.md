@@ -49,9 +49,19 @@ MyWeather.location('Los Angeles')
 Check out the documentation for [Open Weather Map](https://openweathermap.org/api) to see what options are avaliable with what calls.
 
 ## Callback function
-Once you've established your location(s), your API Call and your options, you can chain callbacks.
+Once you've established your location(s), your API Call you'll be returned a promise with the object in response.
+To access the response from OWM use `.response`;
 ```javascript
-MyWeather.location('Los Angeles').units('imperial').current().then(r => console.log(r)).then(renderPage(r));
+MyWeather.location('Los Angeles').units('imperial').current().then(obj => console.log(obj.response));
+```
+If you want to chain callback functions you can do so, but make sure to return the object after each callback.
+```javascript
+MyWeather.location('Los Angeles').units('imperial').current()
+.then(function (obj) {
+  console.log(obj.response);
+  return obj;
+})
+.then(obj => someFunction(obj.city, obj.response));
 ```
 ## API Calls
 Check out the documentation for [Open Weather Map](https://openweathermap.org/api).

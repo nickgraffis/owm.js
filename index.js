@@ -73,22 +73,6 @@ const opOptions = [
   { Op: 'CL', meaning: 'Cloudiness', units: '%' }
 ]
 
-function njax(url, method, callback, headers, body) {
-  let xhttp = new XMLHttpRequest();
-  if (headers) {
-    headers.forEach(h => xhttp.setRequestHeader(h.header, h.value));
-  }
-  xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      callback(JSON.parse(xhttp.responseText));
-    } else if (this.readyState == 4 && this.status != 200) {
-      callback(JSON.parse(xhttp.responseText));
-    }
-  };
-  xhttp.open(method, url, true);
-  xhttp.send(body);
-}
-
 class OpenWeather {
   constructor (OPENWEATHER_APP_ID, version = 2.5) {
     this.weatherApiKey = OPENWEATHER_APP_ID;
@@ -110,6 +94,7 @@ class OpenWeather {
     this.call;
     this.options = [];
     this.error = null;
+    this.response;
   }
 
   get excludeOptions () {
@@ -185,132 +170,84 @@ class OpenWeather {
   }
 
   units (units) {
-    if (unitOptions.includes(units)) {
-      this.options.push({units});
-    } else {
-      return 'Error';
-    }
-
+    this.options.push({units});
     return this;
   }
 
   lang (lang) {
-    if (supportedLang.map(sl => Object.keys(sl).join('')).includes(lang)) {
-      this.options.push({lang});
-    } else {
-      return 'Error';
-    }
-
+    this.options.push({lang});
     return this;
   }
 
   bbox (lonLeft, latBottom, lonRight, latTop, zoom) {
     this.options.push({bbox: `${lonLeft}, ${latBottom}, ${lonRight}, ${latTop}, ${zoom}`});
-
     return this;
   }
 
   cnt (cnt) {
     this.options.push({cnt});
-
     return this;
   }
 
   start (start) {
     this.options.push({start});
-
     return this;
   }
 
   end (end) {
     this.options.push({end});
-
     return this;
   }
 
   month (month) {
-    if (month.match(/[1-9]|1[0-2]/)) {
-      this.options.push({month});
-    } else {
-      return 'Error';
-    }
-
+    this.options.push({month});
     return this;
   }
 
   day (day) {
-    if (day.match(/[1-9]|1[0-9]|2[0-9]|3[0-1]/)) {
-      this.options.push({day});
-    } else {
-      return 'Error';
-    }
-
+    this.options.push({day});
     return this;
   }
 
   threshold (threshold) {
     this.options.push({threshold});
-
     return this;
   }
 
   exclude (option) {
-    if (excludeOptions.includes(option)) {
-      this.options.push({exclude: option});
-    } else {
-      return 'Error';
-    }
-
+    this.options.push({exclude: option});
     return this;
   }
 
   timemachine (dt) {
-    if (dt > (Math.floor((new Date()).getTime() / 1000) - (86400 * 5))) {
-      this.call += '/timemachine';
-      this.options.push({dt});
-    } else {
-      this.error = 'You can only go back a max of 5 days with the One Call Timemachine.';
-    }
-
+    this.call += '/timemachine';
+    this.options.push({dt});
     return this;
   }
 
   current (zone = 'weather') {
-    if (currentWeatherOptions.includes(zone)) {
-      this.call = zone;
-    } else {
-      this.error = 'This is not an option for current weather. Check out this.currentWeatherOptions for avaliable options.';
-    }
-
-    return this;
+    this.call = zone;
+    return this.request();
   }
 
   hourly4Days () {
     this.call = 'forcast/hourly';
-
-    return this;
+    return this.request();
   }
 
   oneCall () {
     this.call = 'onecall';
-
-    if (!this.longitude || !this.latitude) {
-      this.error =  "One Call requires a location specificed in coordinates!";
-    }
-
-    return this;
+    return this.request();
   }
 
   daily16Days () {
     this.call = 'forcast/daily';
-
-    return this;
+    return this.request();
   }
 
   climate30Days () {
     this.call = 'forcast/climate';
-
-    return this;
+    return this.request();
   }
 
   bulk () {
@@ -322,42 +259,31 @@ class OpenWeather {
     this.call = 'roadrisk';
     this.body = JSON.stringify(array);
     this.headers = [{'Content-Type': 'application/json'}]
-
-    return this;
+    return this.request();
   }
 
   fiveDay3Hour () {
     this.call = 'forcast';
-
-    return this;
+    return this.request();
   }
 
   historical () {
     this.subdomain = 'history';
     this.call = 'history/city';
     this.options.push({type: 'hour'});
-
-    return this;
+    return this.request();
   }
 
   statistical (type = null) {
-    if (type && statisticalOptions.includes(type)) {
-      this.call = 'aggregated/' + type;
-    } else {
-      this.call = 'aggregated';
-    }
-
+    this.call = type ? 'aggregated/' + type : 'aggregated';
     this.subdomain = 'history';
-
-    return this;
+    return this.request();
   }
 
   accumulated (type) {
     this.subdomain = 'history';
-
-    if (accumulatedOptions.includes(type)) {
-      this.call = '/history/accumulated_' + type;
-    }
+    this.call = '/history/accumulated_' + type;
+    return this.request();
   }
 
   historyBulk () {
@@ -397,23 +323,28 @@ class OpenWeather {
   }
 
   uvIndex (type = null) {
-    if (type === null || type === 'forcast' || type === 'history') {
-      this.call = type ? 'uvi' : 'uvi/' + type;
-    } else {
-      return 'Error';
-    }
-
-    return this;
+    this.call = type ? 'uvi/' + type : 'uvi';
+    return this.request();
   }
 
-  then (callback) {
-    if (this.error) {
-      return callback(this.error);
-    } else {
-      njax(this.urlString(), this.method, callback, this.headers, this.body);
-    }
-
-    return this;
+  request() {
+    return new Promise((resolve, reject) => {
+      let xhttp = new XMLHttpRequest();
+      xhttp.that = this;
+      if (this.headers) {
+        headers.forEach(h => xhttp.setRequestHeader(h.header, h.value));
+      }
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          xhttp.that.response = JSON.parse(xhttp.responseText);
+          resolve(xhttp.that);
+        } else if (this.readyState == 4 && this.status != 200) {
+          reject(JSON.parse(xhttp.statusText));
+        }
+      };
+      xhttp.open(this.method, this.urlString(), true);
+      xhttp.send(this.body);
+    });
   }
 }
 
